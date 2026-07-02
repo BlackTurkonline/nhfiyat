@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiyat Karşılaştırma Dashboard - 2026</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>OtoFiyat<span>.io</span></h2>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-view="all">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    Tüm Parçalar
+                </button>
+                <button class="nav-btn" data-view="changed">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    Fiyatı Değişenler
+                </button>
+                <button class="nav-btn highlight" data-view="extremes">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M23 6l-9.5 9.5-5-5L1 18"></path><polyline points="17 6 23 6 23 12"></polyline></svg>
+                    Extrem Artış Gösterenler
+                </button>
+                <button class="nav-btn" data-view="new" style="color: #10b981;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Yeni Eklenen Parçalar
+                </button>
+                <button class="nav-btn" data-view="decreased" style="color: #10b981;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+                    Fiyatı Düşenler
+                </button>
+                <button class="nav-btn" data-view="removed" style="color: #64748b;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    Listeden Çıkarılanlar
+                </button>
+                <button class="nav-btn" data-view="servisim" style="color: #a855f7;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                    Servisim (SM)
+                </button>
+                <button class="nav-btn" data-view="stock" style="color: #f59e0b;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    Stok
+                </button>
+                <button class="nav-btn" data-view="analytics" style="color: #06b6d4;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Genel Analiz
+                </button>
+                <button class="nav-btn" data-view="upload" style="color: #3b82f6; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 15px; border-radius: 0;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Yeni Liste Yükle
+                </button>
+            </nav>
+            <div class="sidebar-stats" id="sidebar-servisim-stats">
+                <h3>Servisim (SM) Özet</h3>
+                <div class="sidebar-stat-row">
+                    <span>Toplam SM Parça:</span>
+                    <strong id="sm-stat-total">0</strong>
+                </div>
+                <div class="sidebar-stat-row">
+                    <span>Fiyatı Artan:</span>
+                    <strong id="sm-stat-changed" style="color: #f87171;">0</strong>
+                </div>
+                <div class="sidebar-stat-row">
+                    <span>Fiyatı Düşen:</span>
+                    <strong id="sm-stat-decreased" style="color: #34d399;">0</strong>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-header">
+                <div>
+                   <h1>Fiyat Analizi & Karşılaştırma - 2026</h1>
+                   <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 5px;">Sisteme yeni aylar eklemek için listeleri klasöre yapıştırıp "Verileri_Guncelle.bat" dosyasına tıklamanız yeterlidir.</p>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-badge">
+                        <span class="stat-label">Toplam Parça</span>
+                        <span class="stat-value" id="stats-total">0</span>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Değişim Gören</span>
+                        <span class="stat-value" id="stats-changed">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div class="search-bar-container" style="display: flex; gap: 10px; max-width: 600px; margin-bottom: 1.5rem;">
+                    <div class="search-bar" style="flex: 1; margin-bottom: 0;">
+                        <input type="text" id="search-input" placeholder="Parça No veya Adı ara..." style="max-width: 100%;">
+                    </div>
+                    <button id="btn-toggle-filters" class="toggle-btn" style="display: flex; align-items: center; gap: 6px; padding: 0 15px; border-radius: 12px; margin: 0; background: var(--panel-bg); border-color: var(--border-color); color: var(--text-main); font-weight: 500; cursor: pointer;">
+                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        Filtrele
+                    </button>
+                    <button id="btn-global-export-excel" class="toggle-btn" style="display: flex; align-items: center; gap: 6px; padding: 0 15px; border-radius: 12px; margin: 0; color: var(--success); border-color: var(--success); background: transparent; font-weight: 500; cursor: pointer;">
+                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Excel İndir
+                    </button>
+                </div>
+
+                <!-- Advanced Filter Panel -->
+                <div id="advanced-filter-panel" class="filter-panel" style="display: none; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; animation: slideDown 0.25s ease-out;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                        <!-- Fiyat Aralığı -->
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Fiyat Aralığı (TL)</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="number" id="filter-min-price" placeholder="Min" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                <span style="color: var(--text-muted);">-</span>
+                                <input type="number" id="filter-max-price" placeholder="Max" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                            </div>
+                        </div>
+                        
+                        <!-- Artış Oranı Aralığı -->
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Fiyat Artış Oranı (%)</label>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="number" id="filter-min-change" placeholder="Min %" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                <span style="color: var(--text-muted);">-</span>
+                                <input type="number" id="filter-max-change" placeholder="Max %" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                            </div>
+                        </div>
+                        
+                        <!-- Ürün Durumu -->
+                        <div class="filter-group" style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Ürün Durumu</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                                <label style="display: flex; align-items: center; gap: 6.5px; cursor: pointer; color: var(--text-main);"><input type="checkbox" id="filter-status-up" checked style="accent-color: var(--accent);"> Zamlananlar</label>
+                                <label style="display: flex; align-items: center; gap: 6.5px; cursor: pointer; color: var(--text-main);"><input type="checkbox" id="filter-status-down" checked style="accent-color: var(--accent);"> Düşenler</label>
+                                <label style="display: flex; align-items: center; gap: 6.5px; cursor: pointer; color: var(--text-main);"><input type="checkbox" id="filter-status-same" checked style="accent-color: var(--accent);"> Değişmeyenler</label>
+                                <label style="display: flex; align-items: center; gap: 6.5px; cursor: pointer; color: var(--text-main);"><input type="checkbox" id="filter-status-new" checked style="accent-color: var(--accent);"> Yeni Eklenenler</label>
+                                <label style="display: flex; align-items: center; gap: 6.5px; cursor: pointer; color: var(--text-main);"><input type="checkbox" id="filter-status-removed" checked style="accent-color: var(--accent);"> Çıkarılanlar</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                        <button id="btn-reset-filters" class="toggle-btn" style="margin: 0; padding: 8px 16px; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">Temizle</button>
+                        <button id="btn-apply-advanced-filters" class="toggle-btn active" style="margin: 0; padding: 8px 16px; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">Uygula</button>
+                    </div>
+                </div>
+
+                <div class="controls-bar" id="extreme-controls" style="display: none;">
+                    <span>Extrem artış eşiği: </span>
+                    <select id="extreme-threshold">
+                        <option value="5">%>5 Artış</option>
+                        <option value="10" selected>%>10 Artış</option>
+                        <option value="20">%>20 Artış</option>
+                        <option value="50">%>50 Artış</option>
+                    </select>
+                    <div class="view-toggles">
+                        <button id="btn-chart-view" class="toggle-btn active">📊 Grafikler</button>
+                        <button id="btn-list-view" class="toggle-btn">📋 Liste</button>
+                        <button id="btn-export-excel" class="toggle-btn" style="color: #10b981; border-color: #10b981;">📥 Excel İndir</button>
+                    </div>
+                </div>
+
+                <!-- Table View -->
+                <div id="table-view" class="view-section active">
+                    <div class="table-container">
+                        <table id="data-table">
+                            <thead>
+                                <tr id="table-header-row">
+                                    <!-- Injected via JS -->
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination">
+                        <button id="prev-btn">Önceki</button>
+                        <span id="page-info">Sayfa 1 / 1</span>
+                        <button id="next-btn">Sonraki</button>
+                    </div>
+                </div>
+
+                <!-- Grid View (Charts) -->
+                <div id="grid-view" class="view-section">
+                    <div class="charts-grid" id="charts-container">
+                        <!-- Charts injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Analytics View -->
+                <div id="analytics-view" class="view-section">
+                    <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <!-- Fiyat Endeksi Grafiği Card -->
+                        <div class="chart-card" style="min-height: 380px;">
+                            <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                <div>
+                                    <h3 style="font-size: 1.15rem; font-weight: 600;">Genel Fiyat Endeksi (Ocak = 100)</h3>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Aylara göre kümülatif fiyat değişim trendi</p>
+                                </div>
+                                <select id="analytics-index-filter" style="padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.85rem; cursor: pointer;">
+                                    <option value="all">Tüm Parçalar</option>
+                                    <option value="servisim">Sadece Servisim (SM)</option>
+                                </select>
+                            </div>
+                            <div style="position: relative; height: 260px; width: 100%;">
+                                <canvas id="chart-general-index"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Kategori Ortalama Artış Grafiği Card -->
+                        <div class="chart-card" style="min-height: 380px;">
+                            <div class="chart-header" style="margin-bottom: 1.5rem;">
+                                <h3 style="font-size: 1.15rem; font-weight: 600;">Kategori Bazlı Fiyat Artış Oranları</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Parça kodu prefixlerine göre kümülatif ortalama artış (%)</p>
+                            </div>
+                            <div style="position: relative; height: 260px; width: 100%;">
+                                <canvas id="chart-category-increase"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kategori Özet Tablosu Card -->
+                    <div class="table-container" style="margin-top: 2rem; background-color: var(--panel-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-color);">
+                            <h3 style="font-size: 1.1rem; font-weight: 600;">Kategori Kırılım Detayları</h3>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kategori (Ön Ek)</th>
+                                    <th>Parça Sayısı</th>
+                                    <th>Ocak Ort. Fiyatı</th>
+                                    <th>Güncel Ort. Fiyatı</th>
+                                    <th>Ortalama Değişim</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analytics-category-table-body">
+                                <!-- Dynamic rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Stock View -->
+                <div id="stock-view" class="view-section">
+                    <!-- Stock Header -->
+                    <div class="stock-header">
+                        <div class="stock-title-area">
+                            <h2 class="stock-title">Stok Takibi</h2>
+                            <p class="stock-subtitle">Aylık stok listelerini yükleyin ve analiz edin</p>
+                        </div>
+                        <div class="stock-header-actions">
+                            <select id="stock-period-select" class="stock-period-select">
+                                <option value="">Dönem Seç...</option>
+                            </select>
+                            <button id="btn-stock-upload" class="stock-upload-btn">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                Stok Listesi Yükle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stock Summary Cards -->
+                    <div class="stock-summary-cards" id="stock-summary-cards">
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(245,158,11,0.15); color: #f59e0b;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Toplam Stok Kalemi</span>
+                                <strong class="stock-stat-value" id="stock-stat-total">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(16,185,129,0.15); color: #10b981;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Stokta Var</span>
+                                <strong class="stock-stat-value" id="stock-stat-instock" style="color:#10b981;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(239,68,68,0.15); color: #ef4444;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Stok Sıfır</span>
+                                <strong class="stock-stat-value" id="stock-stat-zero" style="color:#ef4444;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(59,130,246,0.15); color: #3b82f6;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Toplam Stok Değeri</span>
+                                <strong class="stock-stat-value" id="stock-stat-value" style="color:#3b82f6;">—</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Analyst Section -->
+                    <div class="stock-analyst-section" id="stock-analyst-section" style="display: none;">
+                        <!-- Dynamic analysis cards injected via stock.js -->
+                    </div>
+
+
+
+                    <!-- Stock Trend Card -->
+                    <div class="chart-card" id="stock-trend-card" style="display: none; margin-top: 1.5rem; min-height: 320px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 14px;">
+                        <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 1rem; color: #fff;">Aylık Stok İniş-Çıkış Trendi (Genel Gelişim)</h3>
+                        <div style="position: relative; height: 250px; width: 100%;">
+                            <canvas id="chart-stock-trend"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Stock Search and Filter -->
+                    <div class="stock-controls" id="stock-controls" style="display:none;">
+                        <div class="stock-search-wrap">
+                            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" id="stock-search" placeholder="Parça no veya ad ile ara...">
+                        </div>
+                        <select id="stock-filter-status" class="stock-period-select">
+                            <option value="all">Tüm Durumlar</option>
+                            <option value="instock">Stokta Var</option>
+                            <option value="zero">Stok Sıfır</option>
+                        </select>
+                        <button id="btn-stock-export" class="stock-export-btn">
+                            <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Excel İndir
+                        </button>
+                    </div>
+
+                    <!-- Stock Table -->
+                    <div class="stock-table-container" id="stock-table-container">
+                        <!-- Empty state -->
+                        <div class="stock-empty-state" id="stock-empty-state">
+                            <div class="stock-empty-icon">
+                                <svg stroke="currentColor" fill="none" stroke-width="1.5" viewBox="0 0 24 24" height="64" width="64" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            </div>
+                            <h3>Henüz Stok Listesi Yüklenmedi</h3>
+                            <p>Başlamak için yukarıdaki "Stok Listesi Yükle" butonuna tıklayın.<br>Excel dosyanızı (.xlsx) seçin ve sisteme yükleyin.</p>
+                            <button class="stock-upload-btn" onclick="document.getElementById('btn-stock-upload').click()" style="margin-top: 1.5rem;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                İlk Stok Listesini Yükle
+                            </button>
+                        </div>
+                        <!-- Populated table -->
+                        <div id="stock-table-wrap" style="display:none;">
+                            <table id="stock-data-table">
+                                <thead>
+                                    <tr id="stock-table-header"></tr>
+                                </thead>
+                                <tbody id="stock-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Stock Upload Modal -->
+                    <div id="stock-upload-modal" class="stock-modal" style="display:none;">
+                        <div class="stock-modal-backdrop" id="stock-modal-backdrop"></div>
+                        <div class="stock-modal-content">
+                            <div class="stock-modal-header">
+                                <h3>Stok Listesi Yükle</h3>
+                                <button id="btn-close-stock-modal" class="stock-modal-close">&times;</button>
+                            </div>
+                            <div class="stock-modal-body">
+                                <!-- Password step -->
+                                <div id="stock-modal-pw-step">
+                                    <div class="stock-modal-icon" style="color:#f59e0b;">
+                                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="48" width="48" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                    </div>
+                                    <h4>Yetkili Girişi</h4>
+                                    <p>Stok listesi yüklemek için şifrenizi girin.</p>
+                                    <input type="password" id="stock-pw-input" placeholder="Şifre" class="stock-pw-input">
+                                    <div id="stock-pw-error" class="stock-pw-error" style="display:none;">Hatalı şifre!</div>
+                                    <button id="btn-stock-pw-submit" class="stock-upload-btn" style="width:100%; justify-content:center; margin-top:1rem;">Giriş Yap</button>
+                                </div>
+                                <!-- Upload step -->
+                                <div id="stock-modal-upload-step" style="display:none;">
+                                    <div class="stock-modal-icon" style="color:#f59e0b;">
+                                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="48" width="48" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                    </div>
+                                    <h4>Excel Stok Listesi Seç</h4>
+                                    <p style="color:var(--text-muted); font-size:0.88rem; margin: 0.5rem 0 1rem;">Dosya adında dönem bilgisini içermesi önerilir.<br>Örn: <strong>"Ocak 2026 Stok.xlsx"</strong></p>
+                                    <div class="stock-drop-zone" id="stock-drop-zone">
+                                        <svg stroke="currentColor" fill="none" stroke-width="1.5" viewBox="0 0 24 24" height="2.5em" width="2.5em" xmlns="http://www.w3.org/2000/svg" style="color:#f59e0b;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                        <span>Excel dosyasını buraya sürükleyin veya <strong>tıklayın</strong></span>
+                                        <input type="file" id="stock-file-input" accept=".xlsx,.xls,.csv" style="display:none;">
+                                    </div>
+                                    <div id="stock-upload-info" style="display:none; margin-top:1rem; padding: 0.75rem 1rem; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; font-size: 0.88rem; color: #10b981;"></div>
+                                    <div style="display:flex; gap:10px; margin-top:1.25rem;">
+                                        <button id="btn-stock-period-confirm" class="stock-upload-btn" style="flex:1; justify-content:center;" disabled>Yükle</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload View -->
+                <div id="upload-view" class="view-section">
+                    <div class="upload-container">
+                        <!-- Password Protection Card -->
+                        <div class="upload-card" id="password-card" style="display: none;">
+                            <div class="upload-icon">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="48" width="48" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </div>
+                            <h2>Yetkili Girişi</h2>
+                            <p>Yeni liste yüklemek için lütfen şifrenizi girin.</p>
+                            <div class="password-form" style="margin-top: 1.5rem; width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+                                <input type="password" id="upload-password-input" placeholder="Şifre girin" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-dark); color: #fff; text-align: center; font-size: 1.1rem; letter-spacing: 0.1rem; outline: none;">
+                                <button id="upload-password-submit" class="toggle-btn active" style="width: 100%; padding: 12px; margin: 0; cursor: pointer; justify-content: center;">Giriş Yap</button>
+                                <div id="upload-password-error" class="alert-box error" style="display: none; margin-top: 10px; font-size: 0.9rem; width: 100%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Main Upload Card -->
+                        <div class="upload-card" id="upload-main-card" style="display: none;">
+                            <div class="upload-icon">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="48" width="48" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <h2>Excel Fiyat Listesi Yükle</h2>
+                            <p>Yeni aya ait güncel fiyat listesini (.xlsx) buraya sürükleyip bırakın veya tıklayarak seçin.</p>
+                            <p class="upload-hint" style="margin-bottom: 1.5rem;">Dosya adında ay isminin geçmesine dikkat edin (Örn: "Haziran 2026 Güncel Fiyat Listesi.xlsx")</p>
+                            
+                            <!-- This warning will be shown if opened via file:// -->
+                            <div id="protocol-warning" class="file-warning-card" style="display: none; margin-bottom: 1.5rem;">
+                                <h3>⚠️ Yerel Sunucu Bağlantısı Gerekli</h3>
+                                <p>Web tarayıcılarının güvenlik kısıtlamaları nedeniyle, Excel dosyasını doğrudan bu sayfa üzerinden yükleyebilmek için uygulamanın yerel bir sunucu üzerinden çalışması gerekmektedir.</p>
+                                <p style="margin-top: 10px; font-weight: 600;">Çözüm:</p>
+                                <ol style="text-align: left; margin: 10px 0 10px 20px; color: var(--text-muted); font-size: 0.9rem;">
+                                    <li>Klasördeki <strong>Sistemi_Baslat.bat</strong> dosyasını çift tıklayarak çalıştırın.</li>
+                                    <li>Açılan yeni tarayıcı sekmesinden (<strong>http://localhost:5000</strong>) bu sayfayı açın ve yükleme işlemini gerçekleştirin.</li>
+                                </ol>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">Alternatif olarak, Excel dosyasını manuel olarak bu klasöre kopyalayıp <strong>Verileri_Guncelle.bat</strong> dosyasını da çalıştırabilirsiniz.</p>
+                            </div>
+
+                            <div class="drop-zone" id="drop-zone">
+                                <span class="drop-zone-text">Excel dosyasını buraya sürükleyin veya dosya seçmek için tıklayın</span>
+                                <input type="file" id="file-input" accept=".xlsx" style="display: none;">
+                            </div>
+                            
+                            <div id="upload-progress-container" style="display: none;">
+                                <div class="progress-bar-wrapper">
+                                    <div class="progress-bar" id="upload-progress-bar"></div>
+                                </div>
+                                <span id="upload-status-text">Yükleniyor...</span>
+                            </div>
+
+                            <div id="upload-result-box" style="display: none;" class="alert-box">
+                                <!-- Success/Error messages injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Comparison Bar -->
+    <div id="comparison-bar" class="comparison-bar" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(21, 24, 40, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--accent); border-radius: 50px; padding: 10px 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(59, 130, 246, 0.2); z-index: 1000; align-items: center; gap: 20px; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+        <span style="font-size: 0.95rem; font-weight: 500; color: #fff;">
+            <strong id="comparison-count" style="color: var(--accent); font-size: 1.1rem;">0</strong> parça seçildi
+        </span>
+        <div style="display: flex; gap: 8px;">
+            <button id="btn-clear-comparison" class="toggle-btn" style="margin: 0; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; border-color: rgba(255,255,255,0.15); background: transparent; cursor: pointer;">Temizle</button>
+            <button id="btn-open-comparison" class="toggle-btn active" style="margin: 0; padding: 6px 18px; border-radius: 20px; font-size: 0.85rem; background: var(--accent); cursor: pointer;">Karşılaştır</button>
+        </div>
+    </div>
+
+    <!-- Compare Modal -->
+    <div id="compare-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 23, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; animation: fadeIn 0.2s ease-out;">
+        <div class="modal-content" style="background: var(--panel-bg); border: 1px solid var(--border-color); width: 90%; max-width: 1000px; max-height: 90vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);">
+            <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="font-size: 1.3rem; font-weight: 600; color: #fff;">Seçilen Parçaları Karşılaştır</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Seçilen ürünlerin aylara göre fiyat değişim trendleri</p>
+                </div>
+                <button id="btn-close-compare-modal" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; flex: 1;">
+                <!-- Multi-line Chart -->
+                <div class="chart-card" style="min-height: 350px; background: var(--bg-color); border: 1px solid var(--border-color); padding: 1.5rem;">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="chart-comparison-multi"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Side-by-side Table -->
+                <div class="table-container" style="border: 1px solid var(--border-color);">
+                    <table>
+                        <thead>
+                            <tr id="compare-table-header">
+                                <!-- Injected dynamically -->
+                            </tr>
+                        </thead>
+                        <tbody id="compare-table-body">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data and App scripts -->
+    <script src="data.js"></script>
+    <script src="stock_data.js"></script>
+    <script src="stock.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
