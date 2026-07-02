@@ -85,6 +85,16 @@
         });
     }
 
+    function dbDelete(period) {
+        return new Promise((resolve, reject) => {
+            const tx = stockState.db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.delete(period);
+            tx.oncomplete = () => resolve();
+            tx.onerror = (e) => reject(e.target.error);
+        });
+    }
+
     // ── Init ───────────────────────────────────────────────────────────────────
     async function init() {
         try {
@@ -112,6 +122,8 @@
             bindEvents();
 
             if (stockState.activePeriod) {
+                const btnDelete = $('btn-stock-delete');
+                if (btnDelete) btnDelete.style.display = 'inline-flex';
                 await loadAndRender(stockState.activePeriod);
             }
         } catch (err) {
@@ -151,15 +163,51 @@
         if (btnConfirm) btnConfirm.addEventListener('click', processAndSave);
 
         const periodSelect = $('stock-period-select');
+        const btnDelete = $('btn-stock-delete');
         if (periodSelect) periodSelect.addEventListener('change', async (e) => {
             stockState.activePeriod = e.target.value || null;
             stockState.currentPage = 1;
             if (stockState.activePeriod) {
+                if (btnDelete) btnDelete.style.display = 'inline-flex';
                 sessionStorage.setItem('stockActivePeriod', stockState.activePeriod);
                 await loadAndRender(stockState.activePeriod);
             } else {
+                if (btnDelete) btnDelete.style.display = 'none';
                 stockState.allRows = [];
                 applyStockFilters();
+            }
+        });
+
+        if (btnDelete) btnDelete.addEventListener('click', async () => {
+            const period = stockState.activePeriod;
+            if (!period) return;
+            
+            if (confirm(`"${period}" dönemine ait tüm stok verilerini silmek istediğinize emin misiniz?`)) {
+                try {
+                    await dbDelete(period);
+                    
+                    stockState.periodNames = stockState.periodNames.filter(p => p !== period);
+                    showNotification(`🗑️ "${period}" silindi`);
+                    
+                    if (stockState.periodNames.length > 0) {
+                        stockState.activePeriod = stockState.periodNames[stockState.periodNames.length - 1];
+                        sessionStorage.setItem('stockActivePeriod', stockState.activePeriod);
+                        if (periodSelect) periodSelect.value = stockState.activePeriod;
+                        await loadAndRender(stockState.activePeriod);
+                    } else {
+                        stockState.activePeriod = null;
+                        sessionStorage.removeItem('stockActivePeriod');
+                        if (periodSelect) periodSelect.value = '';
+                        if (btnDelete) btnDelete.style.display = 'none';
+                        stockState.allRows = [];
+                        applyStockFilters();
+                    }
+                    
+                    refreshPeriodSelect();
+                } catch (err) {
+                    console.error('Dönem silme hatası:', err);
+                    alert('Hata oluştu: ' + err.message);
+                }
             }
         });
 
