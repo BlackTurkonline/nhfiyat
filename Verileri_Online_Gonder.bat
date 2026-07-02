@@ -13,6 +13,10 @@ if not exist .git (
     echo Git basariyla kuruldu ve remote adresi eklendi.
 )
 
+:: Git kimlik bilgilerini yerel olarak ayarla (hata alinmamasi icin)
+git config user.name "blackturkonline"
+git config user.email "blackturkonline@users.noreply.github.com"
+
 echo.
 echo Degisiklikler algilaniyor...
 git add .
