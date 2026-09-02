@@ -51,9 +51,17 @@
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                     Stok
                 </button>
+                <button class="nav-btn" data-view="sales" style="color: #6366f1;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    Satış Analizi
+                </button>
                 <button class="nav-btn" data-view="analytics" style="color: #06b6d4;">
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     Genel Analiz
+                </button>
+                <button class="nav-btn" data-view="price-search" style="color: #f43f5e;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                    Fiyat Araştırma
                 </button>
                 <button class="nav-btn" data-view="upload" style="color: #3b82f6; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 15px; border-radius: 0;">
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -410,6 +418,299 @@
                     </div>
                 </div>
 
+                <!-- Price Search View -->
+                <div id="price-search-view" class="view-section">
+                    <div class="price-search-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <!-- Top Search Card -->
+                        <div class="search-card" style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 14px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                            <div class="search-card-header" style="margin-bottom: 1.5rem;">
+                                <h2 style="font-size: 1.4rem; font-weight: 600; color: #fff;">İnternetten Fiyat Araştırma</h2>
+                                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 5px;">Girilen parça numarasını seçilen e-ticaret sitelerinde aratarak fiyat ve ad bilgilerini sorgulayın.</p>
+                            </div>
+                            
+                            <div class="search-inputs-wrap" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                                <div class="search-input-box" style="flex: 1; min-width: 250px; display: flex; position: relative;">
+                                    <input type="text" id="price-search-input" placeholder="Parça No girin (Örn: 5118446)" style="width: 100%; padding: 12px 16px; border-radius: 8px 0 0 8px; border: 1px solid var(--border-color); border-right: none; background: var(--bg-color); color: #fff; outline: none; font-size: 1rem;">
+                                    <button id="btn-price-search-submit" class="search-submit-btn" style="background: var(--accent); border: none; color: #fff; padding: 0 24px; border-radius: 0 8px 8px 0; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; transition: background 0.2s;">
+                                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                        Sorgula
+                                    </button>
+                                </div>
+                                <button id="btn-manage-search-sites" class="manage-sites-btn" style="background: var(--panel-bg-hover); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; transition: background 0.2s;">
+                                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                    Siteleri Yönet
+                                </button>
+                            </div>
+
+                            <!-- Target sites checklist -->
+                            <div class="target-sites-selection" style="display: none !important;">
+                                <span class="selection-label" style="font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">Aranacak Siteler:</span>
+                                <div id="search-sites-checklist" class="sites-checklist" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                    <!-- Dynamic checklist of sites -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results List -->
+                        <div id="price-search-results" class="price-search-results-section" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                            <!-- Dynamic site cards with results -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales View -->
+                <div id="sales-view" class="view-section">
+                    <!-- Sales Header -->
+                    <div class="stock-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div class="stock-title-area">
+                            <h2 class="stock-title" style="color: #6366f1;">Satış ve Ciro Raporu</h2>
+                            <p class="stock-subtitle">Faturaları analiz edin, ciro gelişimini ve müşteri performanslarını izleyin</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600; color: var(--text-muted); font-size: 0.9rem;">Analiz Yılı:</span>
+                            <select id="sales-year-select" class="stock-period-select" style="margin: 0; min-width: 140px; background: var(--panel-bg); border-color: var(--border-color); color: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; outline: none; font-weight: 600; font-family: inherit;">
+                                <option value="all">Tüm Yıllar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sales Summary Cards -->
+                    <div class="stock-summary-cards" style="margin-bottom: 2rem;">
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(99,102,241,0.15); color: #6366f1;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Toplam Ciro (KDV Dahil)</span>
+                                <strong class="stock-stat-value" id="sales-stat-total-revenue" style="color:#6366f1;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(16,185,129,0.15); color: #10b981;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Toplam Fatura Adedi</span>
+                                <strong class="stock-stat-value" id="sales-stat-invoice-count" style="color:#10b981;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(245,158,11,0.15); color: #f59e0b;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Ortalama Fatura Tutarı</span>
+                                <strong class="stock-stat-value" id="sales-stat-average-value" style="color:#f59e0b;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(6,182,212,0.15); color: #06b6d4;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em" xmlns="http://www.w3.org/2000/svg"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Aktif Müşteri Sayısı</span>
+                                <strong class="stock-stat-value" id="sales-stat-customer-count" style="color:#06b6d4;">—</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty state if no data -->
+                    <div class="stock-empty-state" id="sales-empty-state" style="display:none; margin-bottom: 2rem;">
+                        <div class="stock-empty-icon" style="color:#6366f1;">
+                            <svg stroke="currentColor" fill="none" stroke-width="1.5" viewBox="0 0 24 24" height="64" width="64" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                        </div>
+                        <h3>Satış Verisi Bulunamadı</h3>
+                        <p>Lütfen <strong>"satış.xlsx"</strong> dosyasını klasöre ekleyin ve verileri güncelleyin.</p>
+                    </div>
+
+                    <div id="sales-content-wrap">
+                        <!-- Sales Charts -->
+                        <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                            <!-- Monthly Trend Card -->
+                            <div class="chart-card" style="min-height: 380px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 14px;">
+                                <div class="chart-header" style="margin-bottom: 1.5rem;">
+                                    <h3 style="font-size: 1.1rem; font-weight: 600; color: #fff;">Aylık Satış & Ciro Trendi</h3>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Aylara göre toplam ciro (TL) ve fatura adetleri</p>
+                                </div>
+                                <div style="position: relative; height: 260px; width: 100%;">
+                                    <canvas id="chart-sales-monthly"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- City Distribution Card -->
+                            <div class="chart-card" style="min-height: 380px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 14px;">
+                                <div class="chart-header" style="margin-bottom: 1.5rem;">
+                                    <h3 style="font-size: 1.1rem; font-weight: 600; color: #fff;">İllere Göre Satış Dağılımı (Top 10)</h3>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">En çok ciro getiren ilk 10 şehir</p>
+                                </div>
+                                <div style="position: relative; height: 260px; width: 100%;">
+                                    <canvas id="chart-sales-city"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabs Header -->
+                        <div style="display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 1px; margin-bottom: 1.5rem;">
+                            <button id="btn-sales-tab-customers" class="toggle-btn active" style="margin: 0; padding: 10px 20px; border-radius: 8px 8px 0 0; border: 1px solid var(--border-color); border-bottom: none; font-weight: 600; cursor: pointer; font-size: 0.95rem; background: var(--panel-bg); color: #fff;">
+                                🏆 Müşteri Liderlik Tablosu (Top 100)
+                            </button>
+                            <button id="btn-sales-tab-invoices" class="toggle-btn" style="margin: 0; padding: 10px 20px; border-radius: 8px 8px 0 0; border: 1px solid transparent; border-bottom: none; font-weight: 500; cursor: pointer; font-size: 0.95rem; background: transparent; color: var(--text-muted);">
+                                📄 Tüm Fatura Kayıtları
+                            </button>
+                        </div>
+
+                        <!-- Tab 1: Customers Table -->
+                        <div id="sales-tab-content-customers" class="sales-tab-content" style="display: block;">
+                            <div class="table-container" style="background-color: var(--panel-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: rgba(0, 0, 0, 0.2);">
+                                            <th style="width: 60px; text-align: center;">Sıra</th>
+                                            <th>Cari Kodu</th>
+                                            <th>Ticari Unvan</th>
+                                            <th style="text-align: right;">Toplam Fatura</th>
+                                            <th style="text-align: right;">Ort. Fatura Tutarı</th>
+                                            <th style="text-align: right; color: #6366f1;">Toplam Ciro</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sales-customers-table-body">
+                                        <!-- Dynamic rows injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Invoices Section -->
+                        <div id="sales-tab-content-invoices" class="sales-tab-content" style="display: none;">
+                            <!-- Invoices Filters -->
+                            <div class="stock-controls" style="display: flex; gap: 15px; margin-bottom: 1.5rem; flex-wrap: wrap; background: transparent; border: none; padding: 0;">
+                                <div class="stock-search-wrap" style="flex: 1; min-width: 250px;">
+                                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    <input type="text" id="sales-invoice-search" placeholder="Fatura No, Cari Kodu veya Müşteri Adı ara...">
+                                </div>
+                                <select id="sales-invoice-filter-city" class="stock-period-select" style="min-width: 180px;">
+                                    <option value="">Tüm Şehirler</option>
+                                </select>
+                                <button id="btn-sales-invoice-clear-filters" class="stock-delete-btn" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 9px 15px; border-radius: 8px; font-family: inherit; font-size: 0.88rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                    Filtreleri Temizle
+                                </button>
+                            </div>
+
+                            <!-- Invoices Table -->
+                            <div class="table-container" style="background-color: var(--panel-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: rgba(0, 0, 0, 0.2);">
+                                            <th>Fatura No</th>
+                                            <th>Tarih</th>
+                                            <th>Cari Kodu</th>
+                                            <th>Ticari Unvan</th>
+                                            <th>Şehir (İl)</th>
+                                            <th style="text-align: right; color: #10b981;">Genel Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sales-invoices-table-body">
+                                        <!-- Dynamic rows injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div class="pagination" id="sales-invoices-pagination" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                <button id="btn-sales-invoice-prev" style="padding: 8px 16px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; cursor: pointer;">Önceki</button>
+                                <span id="sales-invoice-page-info" style="color: var(--text-muted); font-size: 0.9rem;">Sayfa 1 / 1</span>
+                                <button id="btn-sales-invoice-next" style="padding: 8px 16px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; cursor: pointer;">Sonraki</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Sites Management Modal -->
+                <div id="search-sites-modal" class="stock-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 23, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center;">
+                    <div class="stock-modal-backdrop" id="sites-modal-backdrop" style="position: absolute; width: 100%; height: 100%; cursor: pointer;"></div>
+                    <div class="stock-modal-content" style="background: var(--panel-bg); border: 1px solid var(--border-color); max-width: 800px; width: 95%; max-height: 90vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75); position: relative; z-index: 2001;">
+                        <div class="stock-modal-header" style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="font-size: 1.2rem; font-weight: 600; color: #fff;">Arama Sitelerini Yönet</h3>
+                            <button id="btn-close-sites-modal" class="stock-modal-close" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.8rem; cursor: pointer;">&times;</button>
+                        </div>
+                        <div class="stock-modal-body" style="padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.5rem; flex: 1;">
+                            <!-- Form to Add/Edit Site -->
+                            <form id="search-site-form" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 8px; display: flex; flex-direction: column; gap: 1rem;">
+                                <h4 id="site-form-title" style="color: var(--accent); font-weight: 600;">Yeni Site Ekle</h4>
+                                <input type="hidden" id="site-id">
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label style="font-size: 0.82rem; color: var(--text-muted);">Site İsmi</label>
+                                        <input type="text" id="site-name" placeholder="Örn: traktoryedekparcalari.net" required style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label style="font-size: 0.82rem; color: var(--text-muted);">Base URL (Link birleştirme için)</label>
+                                        <input type="url" id="site-base-url" placeholder="Örn: https://www.traktoryedekparcalari.net" required style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <label style="font-size: 0.82rem; color: var(--text-muted);">Arama URL Şablonu ({query} parametresiyle)</label>
+                                    <input type="text" id="site-search-url" placeholder="Örn: https://www.traktoryedekparcalari.net/arama?k={query}" required style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                </div>
+
+                                <!-- Toggle Advanced Options -->
+                                <div style="display: flex; align-items: center; margin-top: 5px;">
+                                    <button type="button" id="btn-toggle-advanced-regex" style="background: transparent; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; font-weight: 500; padding: 0; display: flex; align-items: center; gap: 4px;">
+                                        <span>⚙️ Gelişmiş Ayarlar (Regex Kodları)</span>
+                                    </button>
+                                </div>
+
+                                <div id="advanced-regex-fields" style="display: none; flex-direction: column; gap: 1rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <label style="font-size: 0.82rem; color: var(--text-muted);">Ürün Kartı Regex (card_regex)</label>
+                                            <input type="text" id="site-card-regex" placeholder="Örn: &lt;div class=&quot;card-product&quot;&gt;.*?&lt;/div&gt;\\s*&lt;/div&gt;\\s*&lt;/div&gt;" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                        </div>
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <label style="font-size: 0.82rem; color: var(--text-muted);">Ürün Başlık Regex (title_regex)</label>
+                                            <input type="text" id="site-title-regex" placeholder="Örn: &lt;div class=&quot;title&quot;&gt;\\s*(.*?)\\s*&lt;/div&gt;" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                        </div>
+                                    </div>
+
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <label style="font-size: 0.82rem; color: var(--text-muted);">Fiyat Regex (price_regex)</label>
+                                            <input type="text" id="site-price-regex" placeholder="Örn: &lt;div class=&quot;sale-price[^&quot;]*&quot;&gt;\\s*(.*?)\\s*&lt;/div&gt;" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                        </div>
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <label style="font-size: 0.82rem; color: var(--text-muted);">Link Regex (link_regex)</label>
+                                            <input type="text" id="site-link-regex" placeholder="Örn: &lt;a href=&quot;([^&quot;]+)&quot; class=&quot;c-p-i-link&quot;" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.9rem;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px;">
+                                    <button type="button" id="btn-cancel-site-form" class="stock-delete-btn" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 16px; border-radius: 6px; font-size: 0.88rem; cursor: pointer;">Temizle/İptal</button>
+                                    <button type="submit" class="stock-upload-btn" style="padding: 8px 18px; border-radius: 6px; font-size: 0.88rem; cursor: pointer; background: var(--accent); color: #fff; border: none;">Kaydet</button>
+                                </div>
+                            </form>
+
+                            <!-- List of Sites -->
+                            <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                                    <thead style="background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
+                                        <tr>
+                                            <th style="padding: 10px 15px; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border-color);">Site Adı</th>
+                                            <th style="padding: 10px 15px; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border-color);">Arama URL'i</th>
+                                            <th style="padding: 10px 15px; color: var(--text-muted); font-weight: 500; text-align: right; border-bottom: 1px solid var(--border-color);">İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sites-table-body">
+                                        <!-- Dynamic list of sites -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Upload View -->
                 <div id="upload-view" class="view-section">
                     <div class="upload-container">
@@ -527,6 +828,7 @@
     <script src="data.js"></script>
     <script src="stock_data.js"></script>
     <script src="stock.js"></script>
+    <script src="sales_data.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

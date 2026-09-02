@@ -104,7 +104,7 @@ def process_stock_file(file_path, period_name):
     return rows
 
 if __name__ == "__main__":
-    base_dir = "c:/Users/Asim/Desktop/Antigravity/Fiyat karşılaştırma"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     
     month_map = {
         "ocak": 1, "şubat": 2, "subat": 2,
@@ -230,3 +230,106 @@ if __name__ == "__main__":
         json.dump(preloaded_stock, f, ensure_ascii=False)
         f.write(";\n")
     print(f"Stock data exported to {stock_out_path}")
+
+    # 3. PROCESS SALES DATA (satış.xlsx)
+    sales_file = os.path.join(base_dir, "satış.xlsx")
+    sales_data = {
+        "monthly": [],
+        "customers": [],
+        "cities": [],
+        "invoices": []
+    }
+    
+    if os.path.exists(sales_file):
+        try:
+            print(f"Processing sales file: {sales_file}")
+            df_sales = pd.read_excel(sales_file, sheet_name="Temp1")
+            df_sales.columns = [str(c).strip() for c in df_sales.columns]
+            
+            # Convert date
+            df_sales['Fatura Tarihi Cleaned'] = pd.to_datetime(df_sales['Fatura Tarihi'], errors='coerce')
+            df_sales = df_sales.dropna(subset=['Fatura Tarihi Cleaned'])
+            # Filter out epoch dates (e.g. 1970 from raw 0 values) and keep 2020-2030
+            df_sales = df_sales[(df_sales['Fatura Tarihi Cleaned'].dt.year >= 2020) & (df_sales['Fatura Tarihi Cleaned'].dt.year <= 2030)]
+            
+            # Filter out Türk Traktör invoices (purchase/return invoices)
+            df_sales = df_sales[~df_sales['Ticari Unvanı'].astype(str).str.contains('TÜRK TRAKTÖR|TÜRK TRAKTOR|TURK TRAKTOR|TURK TRAKTÖR|TRAKTÖR VE ZİRAAT MAKİNELERİ|TRAKTOR VE ZIRAAT MAKINELERI', case=False, na=False)]
+            
+            # Convert total
+            df_sales['Genel Toplam Cleaned'] = pd.to_numeric(df_sales['Genel Toplam'], errors='coerce').fillna(0.0)
+            
+            # Strings
+            df_sales['YearMonth'] = df_sales['Fatura Tarihi Cleaned'].dt.strftime('%Y-%m')
+            df_sales['TarihStr'] = df_sales['Fatura Tarihi Cleaned'].dt.strftime('%Y-%m-%d')
+            
+            for col in ['Fatura No', 'Cari Kodu', 'Ticari Unvanı', 'İli', 'İlçesi']:
+                if col in df_sales.columns:
+                    df_sales[col] = df_sales[col].fillna('').astype(str).str.strip()
+                else:
+                    df_sales[col] = ''
+                    
+            df_sales['İli'] = df_sales['İli'].apply(lambda x: x.upper() if x else 'BELİRSİZ')
+            
+            # A. Monthly aggregates
+            monthly_grouped = df_sales.groupby('YearMonth')['Genel Toplam Cleaned'].agg(['sum', 'count']).sort_index()
+            monthly_data = []
+            for ym, r in monthly_grouped.iterrows():
+                monthly_data.append({
+                    "date": str(ym),
+                    "revenue": round(float(r['sum']), 2),
+                    "count": int(r['count'])
+                })
+                
+            # B. Customer aggregates (Top 100)
+            cust_grouped = df_sales.groupby(['Cari Kodu', 'Ticari Unvanı'])['Genel Toplam Cleaned'].agg(['sum', 'count']).reset_index()
+            cust_grouped = cust_grouped.sort_values(by='sum', ascending=False).head(100)
+            customer_data = []
+            for _, r in cust_grouped.iterrows():
+                customer_data.append({
+                    "code": str(r['Cari Kodu']),
+                    "name": str(r['Ticari Unvanı']),
+                    "revenue": round(float(r['sum']), 2),
+                    "count": int(r['count'])
+                })
+                
+            # C. City aggregates
+            city_grouped = df_sales.groupby('İli')['Genel Toplam Cleaned'].agg(['sum', 'count']).reset_index()
+            city_grouped = city_grouped.sort_values(by='sum', ascending=False)
+            city_data = []
+            for _, r in city_grouped.iterrows():
+                city_data.append({
+                    "city": str(r['İli']),
+                    "revenue": round(float(r['sum']), 2),
+                    "count": int(r['count'])
+                })
+                
+            # D. Invoice list
+            df_sorted = df_sales.sort_values(by='Fatura Tarihi Cleaned', ascending=False)
+            invoice_data = []
+            for _, r in df_sorted.iterrows():
+                invoice_data.append([
+                    r['Fatura No'],
+                    r['TarihStr'],
+                    r['Cari Kodu'],
+                    r['Ticari Unvanı'],
+                    r['İli'],
+                    round(float(r['Genel Toplam Cleaned']), 2)
+                ])
+                
+            sales_data = {
+                "monthly": monthly_data,
+                "customers": customer_data,
+                "cities": city_data,
+                "invoices": invoice_data
+            }
+            print(f"Successfully processed {len(invoice_data)} invoices")
+        except Exception as e:
+            print(f"Error processing sales file: {e}")
+            
+    sales_out_path = os.path.join(base_dir, "sales_data.js")
+    with open(sales_out_path, "w", encoding='utf-8') as f:
+        f.write("const salesData = ")
+        json.dump(sales_data, f, ensure_ascii=False)
+        f.write(";\n")
+    print(f"Sales data exported to {sales_out_path}")
+

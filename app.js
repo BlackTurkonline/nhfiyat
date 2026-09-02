@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const state = {
         data: parsedData,
         filteredData: [],
-        view: 'all', // all, changed, extremes, analytics, upload
+        view: 'all', // all, changed, extremes, analytics, upload, price-search
         extremesMode: 'charts',
         currentPage: 1,
         itemsPerPage: 100,
@@ -69,7 +69,20 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedParts: new Set(), // holds part numbers
         analyticsIndexFilter: 'all', // all or servisim
         stockView: 'stock', // just a flag
-        monthlyChanges: {}
+        monthlyChanges: {},
+        // Price search states
+        priceSearchQuery: '',
+        searchSites: [],
+        selectedSearchSites: new Set(),
+        searchInProgress: false,
+        priceSearchInitialized: false,
+        // Sales dashboard states
+        salesSearchQuery: '',
+        salesSelectedCity: '',
+        salesCurrentPage: 1,
+        salesItemsPerPage: 50,
+        salesTab: 'customers',
+        salesSelectedYear: 'all'
     };
 
     // Initialize
@@ -309,6 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (uploadView) uploadView.classList.remove('active');
         if (analyticsView) analyticsView.classList.remove('active');
         if (stockView) stockView.classList.remove('active');
+        const priceSearchView = document.getElementById('price-search-view');
+        if (priceSearchView) priceSearchView.classList.remove('active');
+        const salesView = document.getElementById('sales-view');
+        if (salesView) salesView.classList.remove('active');
 
         // Hide floating comparison bar when not in main tables
         updateComparisonBar();
@@ -329,6 +346,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (searchBarContainer) searchBarContainer.style.display = 'none';
             if (stockView) {
                 stockView.classList.add('active');
+            }
+        } else if (state.view === 'price-search') {
+            if (searchBarContainer) searchBarContainer.style.display = 'none';
+            if (priceSearchView) {
+                priceSearchView.classList.add('active');
+                initPriceSearchView();
+            }
+        } else if (state.view === 'sales') {
+            if (searchBarContainer) searchBarContainer.style.display = 'none';
+            const salesView = document.getElementById('sales-view');
+            if (salesView) {
+                salesView.classList.add('active');
+                renderSales();
             }
         } else {
             if (searchBarContainer) searchBarContainer.style.display = 'flex';
@@ -1334,5 +1364,897 @@ document.addEventListener('DOMContentLoaded', () => {
             state.analyticsIndexFilter = e.target.value;
             renderAnalytics();
         });
+    }
+
+    // Price Search Implementation
+    function initPriceSearchView() {
+        if (!state.priceSearchInitialized) {
+            state.priceSearchInitialized = true;
+            bindPriceSearchEvents();
+        }
+        loadSearchSites();
+    }
+
+    function bindPriceSearchEvents() {
+        const btnSearch = document.getElementById('btn-price-search-submit');
+        const inputSearch = document.getElementById('price-search-input');
+        const btnManage = document.getElementById('btn-manage-search-sites');
+        const modal = document.getElementById('search-sites-modal');
+        const btnCloseModal = document.getElementById('btn-close-sites-modal');
+        const backdropModal = document.getElementById('sites-modal-backdrop');
+        const siteForm = document.getElementById('search-site-form');
+        const btnCancelForm = document.getElementById('btn-cancel-site-form');
+        const btnToggleRegex = document.getElementById('btn-toggle-advanced-regex');
+        const regexFieldsDiv = document.getElementById('advanced-regex-fields');
+
+        if (btnToggleRegex && regexFieldsDiv) {
+            btnToggleRegex.addEventListener('click', () => {
+                if (regexFieldsDiv.style.display === 'none') {
+                    regexFieldsDiv.style.display = 'flex';
+                } else {
+                    regexFieldsDiv.style.display = 'none';
+                }
+            });
+        }
+
+        if (btnSearch) {
+            btnSearch.addEventListener('click', () => {
+                const query = inputSearch.value.trim();
+                performPriceSearch(query);
+            });
+        }
+
+        if (inputSearch) {
+            inputSearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = inputSearch.value.trim();
+                    performPriceSearch(query);
+                }
+            });
+        }
+
+        if (btnManage && modal) {
+            btnManage.addEventListener('click', () => {
+                modal.style.display = 'flex';
+                resetSiteForm();
+                renderSitesTable();
+            });
+        }
+
+        if (btnCloseModal && modal) {
+            btnCloseModal.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+
+        if (backdropModal && modal) {
+            backdropModal.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+
+        if (siteForm) {
+            siteForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveSearchSite();
+            });
+        }
+
+        if (btnCancelForm) {
+            btnCancelForm.addEventListener('click', () => {
+                resetSiteForm();
+            });
+        }
+    }
+
+    function loadSearchSites() {
+        fetch('/api/sites')
+            .then(res => res.json())
+            .then(sites => {
+                state.searchSites = sites;
+                if (state.selectedSearchSites.size === 0) {
+                    sites.forEach(s => state.selectedSearchSites.add(s.id));
+                }
+                renderSitesChecklist();
+                renderSitesTable();
+            })
+            .catch(err => {
+                console.error("Arama siteleri yuklenirken hata, varsayilan yukleniyor:", err);
+                const fallbackSites = [
+                    {
+                        "id": "traktoryedekparcalari",
+                        "name": "traktoryedekparcalari.net",
+                        "search_url": "https://www.traktoryedekparcalari.net/arama?k={query}",
+                        "card_regex": "<div class=\"card-product\">.*?</div>\\s*</div>\\s*</div>",
+                        "title_regex": "<div class=\"title\">\\s*(.*?)\\s*</div>",
+                        "price_regex": "<div class=\"sale-price\\s*[^\"]*\">\\s*(.*?)\\s*</div>",
+                        "link_regex": "<a href=\"([^\"]+)\" class=\"c-p-i-link\"",
+                        "base_url": "https://www.traktoryedekparcalari.net"
+                    }
+                ];
+                state.searchSites = fallbackSites;
+                if (state.selectedSearchSites.size === 0) {
+                    fallbackSites.forEach(s => state.selectedSearchSites.add(s.id));
+                }
+                renderSitesChecklist();
+                renderSitesTable();
+            });
+    }
+
+    function renderSitesChecklist() {
+        const container = document.getElementById('search-sites-checklist');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        state.searchSites.forEach(site => {
+            const label = document.createElement('label');
+            const checked = state.selectedSearchSites.has(site.id) ? 'checked' : '';
+            label.innerHTML = `
+                <input type="checkbox" data-id="${site.id}" ${checked}>
+                <span>${site.name}</span>
+            `;
+            const cb = label.querySelector('input');
+            cb.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    state.selectedSearchSites.add(site.id);
+                } else {
+                    state.selectedSearchSites.delete(site.id);
+                }
+            });
+            container.appendChild(label);
+        });
+    }
+
+    function renderSitesTable() {
+        const tbody = document.getElementById('sites-table-body');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (state.searchSites.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 15px; color: var(--text-muted);">Kayıtlı site bulunamadı.</td></tr>';
+            return;
+        }
+
+        state.searchSites.forEach(site => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 10px 15px; border-bottom: 1px solid var(--border-color);"><strong>${site.name}</strong></td>
+                <td style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem; word-break: break-all;">${site.search_url}</td>
+                <td style="padding: 10px 15px; border-bottom: 1px solid var(--border-color); text-align: right; display: flex; gap: 8px; justify-content: flex-end; align-items: center; min-height: 44px;">
+                    <button class="edit-site-btn" type="button" style="background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); padding: 5px 10px; border-radius: 4px; font-size: 0.78rem; cursor: pointer;">Düzenle</button>
+                    <button class="delete-site-btn" type="button" style="background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 5px 10px; border-radius: 4px; font-size: 0.78rem; cursor: pointer;">Sil</button>
+                </td>
+            `;
+
+            tr.querySelector('.edit-site-btn').addEventListener('click', () => {
+                editSearchSite(site);
+            });
+
+            tr.querySelector('.delete-site-btn').addEventListener('click', () => {
+                if (confirm(`"${site.name}" sitesini silmek istediğinize emin misiniz?`)) {
+                    deleteSearchSite(site.id);
+                }
+            });
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function editSearchSite(site) {
+        document.getElementById('site-id').value = site.id || '';
+        document.getElementById('site-name').value = site.name || '';
+        document.getElementById('site-base-url').value = site.base_url || '';
+        document.getElementById('site-search-url').value = site.search_url || '';
+        document.getElementById('site-card-regex').value = site.card_regex || '';
+        document.getElementById('site-title-regex').value = site.title_regex || '';
+        document.getElementById('site-price-regex').value = site.price_regex || '';
+        document.getElementById('site-link-regex').value = site.link_regex || '';
+
+        const regexFieldsDiv = document.getElementById('advanced-regex-fields');
+        if (regexFieldsDiv) regexFieldsDiv.style.display = 'none';
+
+        document.getElementById('site-form-title').innerText = 'Siteyi Güncelle';
+    }
+
+    function resetSiteForm() {
+        document.getElementById('site-id').value = '';
+        document.getElementById('site-name').value = '';
+        document.getElementById('site-base-url').value = '';
+        document.getElementById('site-search-url').value = '';
+        document.getElementById('site-card-regex').value = '';
+        document.getElementById('site-title-regex').value = '';
+        document.getElementById('site-price-regex').value = '';
+        document.getElementById('site-link-regex').value = '';
+
+        const regexFieldsDiv = document.getElementById('advanced-regex-fields');
+        if (regexFieldsDiv) regexFieldsDiv.style.display = 'none';
+
+        document.getElementById('site-form-title').innerText = 'Yeni Site Ekle';
+    }
+
+    function saveSearchSite() {
+        const siteData = {
+            id: document.getElementById('site-id').value || undefined,
+            name: document.getElementById('site-name').value.trim(),
+            base_url: document.getElementById('site-base-url').value.trim(),
+            search_url: document.getElementById('site-search-url').value.trim(),
+            card_regex: document.getElementById('site-card-regex').value,
+            title_regex: document.getElementById('site-title-regex').value,
+            price_regex: document.getElementById('site-price-regex').value,
+            link_regex: document.getElementById('site-link-regex').value
+        };
+
+        fetch('/api/sites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(siteData)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'success') {
+                resetSiteForm();
+                loadSearchSites();
+            } else {
+                alert('Hata: ' + res.message);
+            }
+        })
+        .catch(err => {
+            alert('Site kaydedilemedi: ' + err);
+        });
+    }
+
+    function deleteSearchSite(siteId) {
+        fetch(`/api/sites?id=${siteId}`, {
+            method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'success') {
+                loadSearchSites();
+            } else {
+                alert('Hata: ' + res.message);
+            }
+        })
+        .catch(err => {
+            alert('Site silinemedi: ' + err);
+        });
+    }
+
+    function performPriceSearch(query) {
+        if (!query) {
+            alert('Lütfen aramak istediğiniz parça numarasını girin.');
+            return;
+        }
+
+        const selectedIds = state.searchSites.map(s => s.id);
+        if (selectedIds.length === 0) {
+            alert('Lütfen arama yapmak için en az bir site ekleyin.');
+            return;
+        }
+
+        const resultsContainer = document.getElementById('price-search-results');
+        if (!resultsContainer) return;
+
+        resultsContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; gap: 1rem; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(255,255,255,0.01);">
+                <svg class="spinner-icon" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="3em" width="3em" xmlns="http://www.w3.org/2000/svg" style="color: var(--warning);"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                <div style="color: var(--text-muted); font-size: 0.95rem;">Tüm kayıtlı siteler sorgulanıyor, lütfen bekleyin...</div>
+            </div>
+        `;
+        state.searchInProgress = true;
+
+        const siteIdsParam = selectedIds.join(',');
+        fetch(`/api/search?query=${encodeURIComponent(query)}&site_ids=${siteIdsParam}`)
+            .then(res => res.json())
+            .then(data => {
+                state.searchInProgress = false;
+                
+                let allItems = [];
+                
+                selectedIds.forEach(id => {
+                    const siteResult = data.results && data.results[id];
+                    if (siteResult && siteResult.success && siteResult.items) {
+                        siteResult.items.forEach(item => {
+                            let sourceSite = '';
+                            if (id === 'google_search') {
+                                try {
+                                    sourceSite = new URL(item.link).hostname.replace('www.', '');
+                                } catch(e) {
+                                    sourceSite = 'Google Araması';
+                                }
+                            } else {
+                                const site = state.searchSites.find(s => s.id === id);
+                                sourceSite = site ? site.name : id;
+                            }
+                            
+                            let cleanTitle = item.title;
+                            if (cleanTitle.startsWith('[')) {
+                                const closeBracket = cleanTitle.indexOf(']');
+                                if (closeBracket !== -1) {
+                                    cleanTitle = cleanTitle.substring(closeBracket + 1).trim();
+                                }
+                            }
+                            
+                            allItems.push({
+                                title: cleanTitle,
+                                price: item.price,
+                                link: item.link,
+                                source: sourceSite
+                            });
+                        });
+                    }
+                });
+                
+                if (allItems.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="site-result-card" style="padding: 2.5rem; text-align: center; color: var(--text-muted); font-size: 1rem;">
+                            🔍 Aradığınız parça seçilen sitelerin hiçbirinde bulunamadı.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Sort items by price (cheapest first)
+                allItems.sort((a, b) => {
+                    const getNum = (str) => {
+                        let clean = str.replace(/[^\d\.,]/g, '');
+                        if (!clean) return 99999999;
+                        if (clean.includes('.') && clean.includes(',')) {
+                            clean = clean.replace(/\./g, '').replace(/,/g, '.');
+                        } else if (clean.includes(',')) {
+                            clean = clean.replace(/,/g, '.');
+                        }
+                        const n = parseFloat(clean);
+                        return isNaN(n) ? 99999999 : n;
+                    };
+                    return getNum(a.price) - getNum(b.price);
+                });
+
+                let tableHTML = `
+                    <div class="site-result-card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                📊 Fiyat Karşılaştırma Sonuçları
+                            </h3>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">${allItems.length} Ürün Bulundu</span>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                                <thead style="background: rgba(255,255,255,0.01); border-bottom: 1px solid var(--border-color);">
+                                    <tr>
+                                        <th style="padding: 12px 20px; color: var(--text-muted); font-weight: 500;">Parça Adı</th>
+                                        <th style="padding: 12px 20px; color: var(--text-muted); font-weight: 500;">Bulunduğu Site</th>
+                                        <th style="padding: 12px 20px; color: var(--text-muted); font-weight: 500;">Fiyatı</th>
+                                        <th style="padding: 12px 20px; color: var(--text-muted); font-weight: 500; text-align: right;">Detaylar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                allItems.forEach(item => {
+                    tableHTML += `
+                        <tr style="border-bottom: 1px solid var(--border-color); background: transparent;">
+                            <td style="padding: 12px 20px;"><strong>${item.title}</strong></td>
+                            <td style="padding: 12px 20px;">
+                                <span style="background: rgba(255,255,255,0.04); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: var(--text-muted); border: 1px solid var(--border-color); font-weight: 500;">
+                                    ${item.source}
+                                </span>
+                            </td>
+                            <td style="padding: 12px 20px; color: var(--success); font-weight: 600; font-size: 0.95rem;">${item.price}</td>
+                            <td style="padding: 12px 20px; text-align: right;">
+                                <a href="${item.link}" target="_blank" class="site-result-link" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; text-decoration: none; color: var(--accent); font-weight: 500;">
+                                    Git
+                                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                resultsContainer.innerHTML = tableHTML;
+            })
+            .catch(err => {
+                state.searchInProgress = false;
+                resultsContainer.innerHTML = `
+                    <div class="site-result-card" style="padding: 2.5rem; text-align: center; color: var(--danger); font-size: 1rem;">
+                        ⚠️ Arama yapılırken bir hata oluştu: ${err.message || err}
+                    </div>
+                `;
+            });
+    }
+
+    // ========================================================
+    // SALES DASHBOARD CORE FUNCTIONS
+    // ========================================================
+    let salesInitialized = false;
+    let salesMonthlyChart = null;
+    let salesCityChart = null;
+
+    function renderSales() {
+        const salesView = document.getElementById('sales-view');
+        const emptyState = document.getElementById('sales-empty-state');
+        const contentWrap = document.getElementById('sales-content-wrap');
+
+        if (!salesView) return;
+
+        // Check if salesData is defined and has invoices
+        if (typeof salesData === 'undefined' || !salesData.invoices || salesData.invoices.length === 0) {
+            emptyState.style.display = 'block';
+            contentWrap.style.display = 'none';
+            return;
+        } else {
+            emptyState.style.display = 'none';
+            contentWrap.style.display = 'block';
+        }
+
+        // Initialize Year selector dropdown
+        const yearSelect = document.getElementById('sales-year-select');
+        if (yearSelect && yearSelect.options.length <= 1) {
+            // Extract unique years
+            const yearsSet = new Set();
+            salesData.invoices.forEach(inv => {
+                const date = inv[1]; // YYYY-MM-DD
+                if (date && date.length >= 4) {
+                    yearsSet.add(date.substring(0, 4));
+                }
+            });
+            const sortedYears = Array.from(yearsSet).sort().reverse(); // Decending
+            sortedYears.forEach(yr => {
+                const opt = document.createElement('option');
+                opt.value = yr;
+                opt.textContent = yr + " Yılı";
+                yearSelect.appendChild(opt);
+            });
+            
+            // Set current value
+            yearSelect.value = state.salesSelectedYear;
+            
+            // Add change listener
+            yearSelect.addEventListener('change', (e) => {
+                state.salesSelectedYear = e.target.value;
+                state.salesCurrentPage = 1;
+                renderSales();
+            });
+        }
+
+        // Filter invoices by year
+        let filteredByYearInvoices = salesData.invoices;
+        if (state.salesSelectedYear !== 'all') {
+            filteredByYearInvoices = salesData.invoices.filter(inv => inv[1].startsWith(state.salesSelectedYear));
+        }
+
+        // 1. Calculate and update summary stats based on filteredByYearInvoices
+        let totalRevenue = 0;
+        let invoiceCount = filteredByYearInvoices.length;
+        let customerCodes = new Set();
+        
+        filteredByYearInvoices.forEach(inv => {
+            totalRevenue += inv[5]; // GenelToplam is index 5
+            customerCodes.add(inv[2]); // CariKodu is index 2
+        });
+        
+        let avgInvoiceValue = invoiceCount > 0 ? totalRevenue / invoiceCount : 0;
+        let activeCustomers = customerCodes.size;
+
+        // Update DOM elements
+        document.getElementById('sales-stat-total-revenue').textContent = totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+        document.getElementById('sales-stat-invoice-count').textContent = invoiceCount.toLocaleString('tr-TR');
+        document.getElementById('sales-stat-average-value').textContent = avgInvoiceValue.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+        document.getElementById('sales-stat-customer-count').textContent = activeCustomers.toLocaleString('tr-TR');
+
+        // 2. Aggregate Data dynamically for charts and tables
+        
+        // A. Monthly aggregation
+        const monthlyGroups = {};
+        filteredByYearInvoices.forEach(inv => {
+            const ym = inv[1].substring(0, 7); // YYYY-MM
+            if (!monthlyGroups[ym]) {
+                monthlyGroups[ym] = { revenue: 0, count: 0 };
+            }
+            monthlyGroups[ym].revenue += inv[5];
+            monthlyGroups[ym].count += 1;
+        });
+
+        // If a specific year is selected, fill in any missing months with 0s to make the chart look nice
+        if (state.salesSelectedYear !== 'all') {
+            for (let m = 1; m <= 12; m++) {
+                const mStr = m.toString().padStart(2, '0');
+                const ym = `${state.salesSelectedYear}-${mStr}`;
+                if (!monthlyGroups[ym]) {
+                    monthlyGroups[ym] = { revenue: 0, count: 0 };
+                }
+            }
+        }
+
+        const sortedMonths = Object.keys(monthlyGroups).sort();
+        const monthlyLabels = sortedMonths.map(ym => {
+            // Convert "YYYY-MM" to Turkish month name or abbreviation
+            const parts = ym.split('-');
+            const year = parts[0];
+            const monthVal = parseInt(parts[1], 10);
+            const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            const mName = monthNames[monthVal - 1];
+            return state.salesSelectedYear === 'all' ? `${mName} ${year}` : mName;
+        });
+        const monthlyRevenues = sortedMonths.map(ym => monthlyGroups[ym].revenue);
+        const monthlyCounts = sortedMonths.map(ym => monthlyGroups[ym].count);
+
+        if (salesMonthlyChart) salesMonthlyChart.destroy();
+        const ctxMonthly = document.getElementById('chart-sales-monthly').getContext('2d');
+        salesMonthlyChart = new Chart(ctxMonthly, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [
+                    {
+                        label: 'Ciro (TL)',
+                        data: monthlyRevenues,
+                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                        borderColor: '#6366f1',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Fatura Adedi',
+                        data: monthlyCounts,
+                        type: 'line',
+                        borderColor: '#10b981',
+                        backgroundColor: 'transparent',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#10b981',
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M TL';
+                                if (value >= 1e3) return (value / 1e3).toFixed(0) + 'K TL';
+                                return value + ' TL';
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#f1f5f9' }
+                    }
+                }
+            }
+        });
+
+        // B. City distribution (Top 10)
+        const cityGroups = {};
+        filteredByYearInvoices.forEach(inv => {
+            const city = inv[4] || 'BELİRSİZ';
+            if (!cityGroups[city]) {
+                cityGroups[city] = { revenue: 0, count: 0 };
+            }
+            cityGroups[city].revenue += inv[5];
+            cityGroups[city].count += 1;
+        });
+
+        const sortedCities = Object.keys(cityGroups).map(city => ({
+            city: city,
+            revenue: cityGroups[city].revenue,
+            count: cityGroups[city].count
+        })).sort((a, b) => b.revenue - a.revenue);
+
+        const topCities = sortedCities.slice(0, 10);
+        const cityLabels = topCities.map(c => c.city);
+        const cityRevenues = topCities.map(c => c.revenue);
+
+        if (salesCityChart) salesCityChart.destroy();
+        const ctxCity = document.getElementById('chart-sales-city').getContext('2d');
+        salesCityChart = new Chart(ctxCity, {
+            type: 'bar',
+            data: {
+                labels: cityLabels,
+                datasets: [{
+                    label: 'Toplam Ciro (TL)',
+                    data: cityRevenues,
+                    backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                    borderColor: '#06b6d4',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M TL';
+                                if (value >= 1e3) return (value / 1e3).toFixed(0) + 'K TL';
+                                return value + ' TL';
+                            }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // 3. Populate City Dropdown Filter dynamics
+        const cityFilter = document.getElementById('sales-invoice-filter-city');
+        if (cityFilter) {
+            // Keep the selected value
+            const currentSelectedCity = state.salesSelectedCity;
+            
+            // Clear all options except the first one
+            cityFilter.innerHTML = '<option value="">Tüm Şehirler</option>';
+            
+            sortedCities.forEach(c => {
+                if (c.city) {
+                    const opt = document.createElement('option');
+                    opt.value = c.city;
+                    opt.textContent = c.city + ` (${c.revenue.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} TL)`;
+                    cityFilter.appendChild(opt);
+                }
+            });
+            
+            // Restore selection if valid, else reset
+            if (cityGroups[currentSelectedCity]) {
+                cityFilter.value = currentSelectedCity;
+            } else {
+                state.salesSelectedCity = '';
+                cityFilter.value = '';
+            }
+        }
+
+        // C. Customer Leaderboard aggregation (Top 100)
+        const customerGroups = {};
+        filteredByYearInvoices.forEach(inv => {
+            const key = inv[2] + '|||' + inv[3]; // CariKodu + TicariUnvan
+            if (!customerGroups[key]) {
+                customerGroups[key] = { revenue: 0, count: 0 };
+            }
+            customerGroups[key].revenue += inv[5];
+            customerGroups[key].count += 1;
+        });
+
+        const sortedCustomers = Object.keys(customerGroups).map(key => {
+            const parts = key.split('|||');
+            return {
+                code: parts[0],
+                name: parts[1],
+                revenue: customerGroups[key].revenue,
+                count: customerGroups[key].count
+            };
+        }).sort((a, b) => b.revenue - a.revenue).slice(0, 100);
+
+        // Save current Top Customers for rendering
+        state.currentTopCustomers = sortedCustomers;
+
+        // Initialize Tab Event Listeners once
+        if (!salesInitialized) {
+            salesInitialized = true;
+            
+            // Tab Toggles
+            const tabCustomers = document.getElementById('btn-sales-tab-customers');
+            const tabInvoices = document.getElementById('btn-sales-tab-invoices');
+            const contentCustomers = document.getElementById('sales-tab-content-customers');
+            const contentInvoices = document.getElementById('sales-tab-content-invoices');
+
+            if (tabCustomers && tabInvoices) {
+                tabCustomers.addEventListener('click', () => {
+                    tabCustomers.classList.add('active');
+                    tabCustomers.style.background = 'var(--panel-bg)';
+                    tabCustomers.style.borderColor = 'var(--border-color)';
+                    tabCustomers.style.color = '#fff';
+
+                    tabInvoices.classList.remove('active');
+                    tabInvoices.style.background = 'transparent';
+                    tabInvoices.style.borderColor = 'transparent';
+                    tabInvoices.style.color = 'var(--text-muted)';
+
+                    contentCustomers.style.display = 'block';
+                    contentInvoices.style.display = 'none';
+                    state.salesTab = 'customers';
+                });
+
+                tabInvoices.addEventListener('click', () => {
+                    tabInvoices.classList.add('active');
+                    tabInvoices.style.background = 'var(--panel-bg)';
+                    tabInvoices.style.borderColor = 'var(--border-color)';
+                    tabInvoices.style.color = '#fff';
+
+                    tabCustomers.classList.remove('active');
+                    tabCustomers.style.background = 'transparent';
+                    tabCustomers.style.borderColor = 'transparent';
+                    tabCustomers.style.color = 'var(--text-muted)';
+
+                    contentInvoices.style.display = 'block';
+                    contentCustomers.style.display = 'none';
+                    state.salesTab = 'invoices';
+                    renderSalesInvoices();
+                });
+            }
+
+            // Invoices Filters Listeners
+            const invoiceSearch = document.getElementById('sales-invoice-search');
+            if (invoiceSearch) {
+                invoiceSearch.addEventListener('input', (e) => {
+                    state.salesSearchQuery = e.target.value.toLowerCase().trim();
+                    state.salesCurrentPage = 1;
+                    renderSalesInvoices();
+                });
+            }
+
+            if (cityFilter) {
+                cityFilter.addEventListener('change', (e) => {
+                    state.salesSelectedCity = e.target.value;
+                    state.salesCurrentPage = 1;
+                    renderSalesInvoices();
+                });
+            }
+
+            const clearBtn = document.getElementById('btn-sales-invoice-clear-filters');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    if (invoiceSearch) invoiceSearch.value = '';
+                    if (cityFilter) cityFilter.value = '';
+                    state.salesSearchQuery = '';
+                    state.salesSelectedCity = '';
+                    state.salesCurrentPage = 1;
+                    renderSalesInvoices();
+                });
+            }
+
+            // Invoices Pagination Listeners
+            const prevBtn = document.getElementById('btn-sales-invoice-prev');
+            const nextBtn = document.getElementById('btn-sales-invoice-next');
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    if (state.salesCurrentPage > 1) {
+                        state.salesCurrentPage--;
+                        renderSalesInvoices();
+                    }
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    const filteredInvoices = getFilteredInvoices();
+                    const maxPage = Math.ceil(filteredInvoices.length / state.salesItemsPerPage);
+                    if (state.salesCurrentPage < maxPage) {
+                        state.salesCurrentPage++;
+                        renderSalesInvoices();
+                    }
+                });
+            }
+        }
+
+        // Render Tab contents
+        renderSalesCustomers();
+        if (state.salesTab === 'invoices') {
+            renderSalesInvoices();
+        }
+    }
+
+    function renderSalesCustomers() {
+        const tbody = document.getElementById('sales-customers-table-body');
+        if (!tbody || !state.currentTopCustomers) return;
+
+        tbody.innerHTML = '';
+        state.currentTopCustomers.forEach((cust, index) => {
+            const tr = document.createElement('tr');
+            
+            const avgVal = cust.count > 0 ? cust.revenue / cust.count : 0;
+            
+            tr.innerHTML = `
+                <td style="text-align: center; font-weight: 600; color: ${index < 3 ? 'var(--warning)' : 'var(--text-muted)'}">${index + 1}</td>
+                <td style="font-family: monospace; font-size: 0.85rem;">${cust.code}</td>
+                <td style="font-weight: 500;">${cust.name}</td>
+                <td style="text-align: right;">${cust.count.toLocaleString('tr-TR')}</td>
+                <td style="text-align: right;">${avgVal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL</td>
+                <td style="text-align: right; font-weight: 600; color: #6366f1;">${cust.revenue.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function getFilteredInvoices() {
+        if (!salesData.invoices) return [];
+        
+        // First filter by year
+        let yearFiltered = salesData.invoices;
+        if (state.salesSelectedYear !== 'all') {
+            yearFiltered = salesData.invoices.filter(inv => inv[1].startsWith(state.salesSelectedYear));
+        }
+
+        return yearFiltered.filter(inv => {
+            const faturaNo = inv[0].toLowerCase();
+            const cariKodu = inv[2].toLowerCase();
+            const unvan = inv[3].toLowerCase();
+            const sehir = inv[4];
+
+            if (state.salesSelectedCity && sehir !== state.salesSelectedCity) {
+                return false;
+            }
+
+            if (state.salesSearchQuery) {
+                const match = faturaNo.includes(state.salesSearchQuery) || 
+                              cariKodu.includes(state.salesSearchQuery) || 
+                              unvan.includes(state.salesSearchQuery);
+                if (!match) return false;
+            }
+
+            return true;
+        });
+    }
+
+    function renderSalesInvoices() {
+        const tbody = document.getElementById('sales-invoices-table-body');
+        const pageInfo = document.getElementById('sales-invoice-page-info');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        const filtered = getFilteredInvoices();
+        
+        const start = (state.salesCurrentPage - 1) * state.salesItemsPerPage;
+        const end = start + state.salesItemsPerPage;
+        const pageData = filtered.slice(start, end);
+
+        if (pageData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 2rem;">Arama kriterlerine uygun fatura bulunamadı.</td></tr>`;
+            if (pageInfo) pageInfo.textContent = 'Sayfa 0 / 0';
+            return;
+        }
+
+        pageData.forEach(inv => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight: 500; color: #fff;">${inv[0]}</td>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">${inv[1]}</td>
+                <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">${inv[2]}</td>
+                <td style="font-weight: 500;">${inv[3]}</td>
+                <td><span class="status-badge" style="background: rgba(255,255,255,0.05); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; border: 1px solid var(--border-color);">${inv[4]}</span></td>
+                <td style="text-align: right; font-weight: 600; color: #10b981;">${inv[5].toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const maxPage = Math.ceil(filtered.length / state.salesItemsPerPage);
+        if (pageInfo) {
+            pageInfo.textContent = `Sayfa ${state.salesCurrentPage} / ${maxPage} (Toplam ${filtered.length.toLocaleString('tr-TR')} fatura)`;
+        }
     }
 });

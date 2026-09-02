@@ -1,0 +1,68 @@
+[
+  {
+    "id": "traktoryedekparcalari",
+    "name": "traktoryedekparcalari.net",
+    "search_url": "https://www.traktoryedekparcalari.net/arama?k={query}",
+    "card_regex": "<div class=\"card-product\">.*?</div>\\s*</div>\\s*</div>",
+    "title_regex": "<div class=\"title\">\\s*(.*?)\\s*</div>",
+    "price_regex": "<div class=\"sale-price\\s*[^\"]*\">\\s*(.*?)\\s*</div>",
+    "link_regex": "<a href=\"([^\"]+)\" class=\"c-p-i-link\"",
+    "base_url": "https://www.traktoryedekparcalari.net"
+  },
+  {
+    "id": "mahirtraktor",
+    "name": "mahirtraktor.com",
+    "search_url": "https://www.mahirtraktor.com/?s={query}&post_type=product",
+    "card_regex": "<article class=\"cmsmasters_product\">.*?</article>",
+    "title_regex": "<h3 class=\"cmsmasters_product_title entry-title\">\\s*<a href=\"[^\"]+\">\\s*(.*?)\\s*</a>",
+    "price_regex": "class=\"price\">.*?<bdi>\\s*(.*?)\\s*</bdi>|class=\"price\">.*?amount[^>]*>\\s*(.*?)\\s*</",
+    "link_regex": "<h3 class=\"cmsmasters_product_title entry-title\">\\s*<a href=\"([^\"]+)\"",
+    "base_url": "https://www.mahirtraktor.com"
+  },
+  {
+    "id": "uctarimmarket",
+    "name": "uctarimmarket.com",
+    "search_url": "",
+    "card_regex": "",
+    "title_regex": "",
+    "price_regex": "",
+    "base_url": "https://www.uctarimmarket.com"
+  },
+  {
+    "id": "kaplantraktor",
+    "name": "kaplantraktor.com",
+    "search_url": "",
+    "card_regex": "",
+    "title_regex": "",
+    "price_regex": "",
+    "base_url": "https://kaplantraktor.com"
+  },
+  {
+    "id": "trendyol",
+    "name": "trendyol.com",
+    "search_url": "",
+    "card_regex": "",
+    "title_regex": "",
+    "price_regex": "",
+    "base_url": "https://www.trendyol.com"
+  },
+  {
+    "id": "sincanli",
+    "name": "sincanli.com",
+    "search_url": "",
+    "card_regex": "",
+    "title_regex": "",
+    "price_regex": "",
+    "base_url": "https://www.sincanli.com"
+  },
+  {
+    "id": "google_search",
+    "name": "Genel İnternet Araması (Google/DDG)",
+    "search_url": "https://html.duckduckgo.com/html/?q={query}+fiyat",
+    "card_regex": "",
+    "title_regex": "",
+    "price_regex": "",
+    "link_regex": "",
+    "base_url": ""
+  }
+]
