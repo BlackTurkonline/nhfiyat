@@ -82,7 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
         salesCurrentPage: 1,
         salesItemsPerPage: 50,
         salesTab: 'customers',
-        salesSelectedYear: 'all'
+        salesSelectedYear: 'all',
+        // Price analysis states
+        paSelectedPeriod: 'all',
+        paSearchQuery: '',
+        paTab: 'all', // all, up, down
+        paCurrentPage: 1,
+        paItemsPerPage: 100,
+        paInitialized: false
     };
 
     // Initialize
@@ -326,6 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (priceSearchView) priceSearchView.classList.remove('active');
         const salesView = document.getElementById('sales-view');
         if (salesView) salesView.classList.remove('active');
+        const priceAnalysisView = document.getElementById('price-analysis-view');
+        if (priceAnalysisView) priceAnalysisView.classList.remove('active');
 
         // Hide floating comparison bar when not in main tables
         updateComparisonBar();
@@ -359,6 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (salesView) {
                 salesView.classList.add('active');
                 renderSales();
+            }
+        } else if (state.view === 'price-analysis') {
+            if (searchBarContainer) searchBarContainer.style.display = 'none';
+            if (priceAnalysisView) {
+                priceAnalysisView.classList.add('active');
+                if (typeof initPriceAnalysisView === 'function') initPriceAnalysisView();
+                if (typeof renderPriceAnalysis === 'function') renderPriceAnalysis();
             }
         } else {
             if (searchBarContainer) searchBarContainer.style.display = 'flex';
@@ -2256,5 +2272,333 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pageInfo) {
             pageInfo.textContent = `Sayfa ${state.salesCurrentPage} / ${maxPage} (Toplam ${filtered.length.toLocaleString('tr-TR')} fatura)`;
         }
+    }
+
+    // ============================================================================
+    // FIYAT ANALİZİ YÖNETİMİ
+    // ============================================================================
+    let paCharts = { monthlyCounts: null, distribution: null, topChanges: null };
+
+    window.initPriceAnalysisView = function() {
+        if (state.paInitialized) return;
+        state.paInitialized = true;
+
+        const periodSelect = document.getElementById('pa-period-select');
+        const tabAll = document.getElementById('pa-tab-all');
+        const tabUp = document.getElementById('pa-tab-up');
+        const tabDown = document.getElementById('pa-tab-down');
+        const searchInput = document.getElementById('pa-search-input');
+        const prevBtn = document.getElementById('pa-prev-btn');
+        const nextBtn = document.getElementById('pa-next-btn');
+
+        // Populate period dropdown
+        if (state.data.length > 0) {
+            const months = Object.keys(state.data[0].prices);
+            periodSelect.innerHTML = '<option value="all">Tüm Dönemler (Kümülatif)</option>';
+            for (let i = 1; i < months.length; i++) {
+                const prev = months[i - 1];
+                const curr = months[i];
+                const opt = document.createElement('option');
+                opt.value = curr;
+                opt.textContent = `${curr} '26 (Önceki ay: ${prev})`;
+                periodSelect.appendChild(opt);
+            }
+        }
+
+        periodSelect.addEventListener('change', (e) => {
+            state.paSelectedPeriod = e.target.value;
+            state.paCurrentPage = 1;
+            renderPriceAnalysis();
+        });
+
+        const updateTabs = (selectedTab) => {
+            state.paTab = selectedTab;
+            state.paCurrentPage = 1;
+            tabAll.classList.toggle('active', selectedTab === 'all');
+            tabUp.classList.toggle('active', selectedTab === 'up');
+            tabDown.classList.toggle('active', selectedTab === 'down');
+            renderPriceAnalysisTable();
+        };
+
+        tabAll.addEventListener('click', () => updateTabs('all'));
+        tabUp.addEventListener('click', () => updateTabs('up'));
+        tabDown.addEventListener('click', () => updateTabs('down'));
+
+        searchInput.addEventListener('input', (e) => {
+            state.paSearchQuery = e.target.value.toLowerCase().trim();
+            state.paCurrentPage = 1;
+            renderPriceAnalysisTable();
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (state.paCurrentPage > 1) {
+                state.paCurrentPage--;
+                renderPriceAnalysisTable();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            state.paCurrentPage++;
+            renderPriceAnalysisTable();
+        });
+    };
+
+    window.renderPriceAnalysis = function() {
+        if (!state.data || state.data.length === 0) return;
+        
+        const period = state.paSelectedPeriod;
+        const months = Object.keys(state.data[0].prices);
+        
+        let changedCount = 0;
+        let incCount = 0;
+        let decCount = 0;
+        let sumInc = 0;
+        let sumDec = 0;
+        
+        let sumPrevTotal = 0;
+        let sumCurrTotal = 0;
+
+        let itemsWithMetrics = [];
+
+        state.data.forEach(item => {
+            let prevP = 0;
+            let currP = 0;
+            let pct = 0;
+
+            if (period === 'all') {
+                const validPrices = Object.values(item.prices).filter(p => p > 0);
+                if (validPrices.length > 1) {
+                    prevP = validPrices[0];
+                    currP = validPrices[validPrices.length - 1];
+                    pct = ((currP - prevP) / prevP) * 100;
+                }
+            } else {
+                const idx = months.indexOf(period);
+                if (idx > 0) {
+                    prevP = item.prices[months[idx - 1]] || 0;
+                    currP = item.prices[period] || 0;
+                    if (prevP > 0 && currP > 0) {
+                        pct = ((currP - prevP) / prevP) * 100;
+                    }
+                }
+            }
+
+            if (prevP > 0 && currP > 0) {
+                sumPrevTotal += prevP;
+                sumCurrTotal += currP;
+
+                if (Math.abs(pct) > 0.01) {
+                    changedCount++;
+                    if (pct > 0) {
+                        incCount++;
+                        sumInc += pct;
+                    } else if (pct < 0) {
+                        decCount++;
+                        sumDec += pct;
+                    }
+                }
+            }
+            
+            itemsWithMetrics.push({
+                partNo: item.partNo,
+                partName: item.partName,
+                prevPrice: prevP,
+                currPrice: currP,
+                diff: currP - prevP,
+                pct: pct
+            });
+        });
+
+        const avgInc = incCount > 0 ? (sumInc / incCount) : 0;
+        const avgDec = decCount > 0 ? (sumDec / decCount) : 0;
+        const avgTotal = sumPrevTotal > 0 ? ((sumCurrTotal - sumPrevTotal) / sumPrevTotal) * 100 : 0;
+
+        // Update KPI Cards
+        document.getElementById('pa-stat-total-changed').textContent = changedCount.toLocaleString('tr-TR');
+        document.getElementById('pa-stat-increased-count').innerHTML = `${incCount.toLocaleString('tr-TR')} <span style="font-size: 0.75rem; color: #fca5a5;">(Ort. +${avgInc.toFixed(1)}%)</span>`;
+        document.getElementById('pa-stat-decreased-count').innerHTML = `${decCount.toLocaleString('tr-TR')} <span style="font-size: 0.75rem; color: #6ee7b7;">(Ort. ${avgDec.toFixed(1)}%)</span>`;
+        document.getElementById('pa-stat-avg-change').textContent = `${avgTotal > 0 ? '+' : ''}${avgTotal.toFixed(2)}%`;
+
+        state.paItemsMetrics = itemsWithMetrics;
+
+        renderPACharts();
+        renderPriceAnalysisTable();
+    };
+
+    function renderPACharts() {
+        const months = Object.keys(state.data[0].prices);
+        
+        // Chart 1: Monthly Counts (All periods)
+        const monthLabels = months.slice(1);
+        const monthlyUp = [];
+        const monthlyDown = [];
+        
+        monthLabels.forEach(m => {
+            const idx = months.indexOf(m);
+            const prev = months[idx - 1];
+            let up = 0, down = 0;
+            state.data.forEach(item => {
+                const p1 = item.prices[prev] || 0;
+                const p2 = item.prices[m] || 0;
+                if (p1 > 0 && p2 > 0) {
+                    if (p2 > p1) up++;
+                    else if (p2 < p1) down++;
+                }
+            });
+            monthlyUp.push(up);
+            monthlyDown.push(down);
+        });
+
+        if (paCharts.monthlyCounts) paCharts.monthlyCounts.destroy();
+        const ctx1 = document.getElementById('chart-pa-monthly-counts').getContext('2d');
+        paCharts.monthlyCounts = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    { label: 'Zamlanan', data: monthlyUp, backgroundColor: '#ef4444' },
+                    { label: 'İndirim Gören', data: monthlyDown, backgroundColor: '#10b981' }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: false, ticks: { color: '#94a3b8' }, grid: { display: false } },
+                    y: { stacked: false, ticks: { color: '#94a3b8' }, grid: { color: '#2e364f' } }
+                },
+                plugins: { legend: { labels: { color: '#fff' } } }
+            }
+        });
+
+        // Chart 2: Distribution for selected period
+        let dist = { highUp: 0, lowUp: 0, same: 0, down: 0 };
+        state.paItemsMetrics.forEach(item => {
+            if (item.prevPrice > 0 && item.currPrice > 0) {
+                if (item.pct > 10) dist.highUp++;
+                else if (item.pct > 0 && item.pct <= 10) dist.lowUp++;
+                else if (item.pct === 0) dist.same++;
+                else if (item.pct < 0) dist.down++;
+            }
+        });
+
+        if (paCharts.distribution) paCharts.distribution.destroy();
+        const ctx2 = document.getElementById('chart-pa-distribution').getContext('2d');
+        paCharts.distribution = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['>%10 Zam', '0-%10 Arası Zam', 'Değişmeyen', 'İndirim Gören'],
+                datasets: [{
+                    data: [dist.highUp, dist.lowUp, dist.same, dist.down],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#64748b', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#fff' } }
+                }
+            }
+        });
+
+        // Chart 3: Top Changes
+        const sortedDesc = [...state.paItemsMetrics].filter(i => i.prevPrice > 0 && i.currPrice > 0).sort((a,b) => b.pct - a.pct);
+        const top5Up = sortedDesc.slice(0, 5);
+        const top5Down = sortedDesc.slice().reverse().slice(0, 5).filter(i => i.pct < 0);
+        
+        const topLabels = [...top5Up.map(i => i.partNo), ...top5Down.map(i => i.partNo)];
+        const topValues = [...top5Up.map(i => i.pct), ...top5Down.map(i => i.pct)];
+        const topColors = [...top5Up.map(() => '#ef4444'), ...top5Down.map(() => '#10b981')];
+
+        if (paCharts.topChanges) paCharts.topChanges.destroy();
+        const ctx3 = document.getElementById('chart-pa-top-changes').getContext('2d');
+        paCharts.topChanges = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: topLabels,
+                datasets: [{
+                    label: 'Değişim (%)',
+                    data: topValues,
+                    backgroundColor: topColors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#2e364f' } },
+                    y: { ticks: { color: '#fff', font: { weight: 'bold' } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderPriceAnalysisTable() {
+        const tbody = document.getElementById('pa-table-body');
+        const pageInfo = document.getElementById('pa-page-info');
+        
+        let filtered = state.paItemsMetrics.filter(item => item.prevPrice > 0 && item.currPrice > 0);
+
+        if (state.paTab === 'up') filtered = filtered.filter(i => i.pct > 0);
+        else if (state.paTab === 'down') filtered = filtered.filter(i => i.pct < 0);
+
+        if (state.paSearchQuery) {
+            filtered = filtered.filter(i => 
+                (i.partNo && i.partNo.toLowerCase().includes(state.paSearchQuery)) ||
+                (i.partName && i.partName.toLowerCase().includes(state.paSearchQuery))
+            );
+        }
+
+        filtered.sort((a, b) => {
+            if (state.paTab === 'up') return b.pct - a.pct;
+            if (state.paTab === 'down') return a.pct - b.pct;
+            return b.pct - a.pct; // default to biggest change
+        });
+
+        const start = (state.paCurrentPage - 1) * state.paItemsPerPage;
+        const end = start + state.paItemsPerPage;
+        const pageData = filtered.slice(start, end);
+
+        tbody.innerHTML = '';
+        if (pageData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-muted);">Kayıt bulunamadı.</td></tr>`;
+        }
+
+        pageData.forEach(item => {
+            const tr = document.createElement('tr');
+            
+            let statusHTML = `<span style="color:var(--text-muted);">Aynı</span>`;
+            let diffColor = 'inherit';
+            
+            if (item.pct > 0) {
+                statusHTML = `<span style="background: rgba(239,68,68,0.15); color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">↗ Zamlandı</span>`;
+                diffColor = '#ef4444';
+            } else if (item.pct < 0) {
+                statusHTML = `<span style="background: rgba(16,185,129,0.15); color: #10b981; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">↘ İndirim</span>`;
+                diffColor = '#10b981';
+            }
+
+            tr.innerHTML = `
+                <td style="font-weight: 600; color: #fff;">${item.partNo}</td>
+                <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.partName}">${item.partName}</td>
+                <td>${item.prevPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</td>
+                <td style="font-weight: 600;">${item.currPrice.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</td>
+                <td style="color: ${diffColor};">${item.diff > 0 ? '+' : ''}${item.diff.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} TL</td>
+                <td style="color: ${diffColor}; font-weight: 600;">${item.pct > 0 ? '+' : ''}${item.pct.toFixed(2)}%</td>
+                <td style="text-align: center;">${statusHTML}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const maxPage = Math.max(1, Math.ceil(filtered.length / state.paItemsPerPage));
+        if (state.paCurrentPage > maxPage) {
+            state.paCurrentPage = maxPage;
+        }
+
+        pageInfo.textContent = `Sayfa ${state.paCurrentPage} / ${maxPage} (${filtered.length} kayıt)`;
+        document.getElementById('pa-prev-btn').disabled = state.paCurrentPage === 1;
+        document.getElementById('pa-next-btn').disabled = state.paCurrentPage === maxPage;
     }
 });

@@ -55,6 +55,10 @@
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                     Satış Analizi
                 </button>
+                <button class="nav-btn" data-view="price-analysis" style="color: #ec4899;">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Fiyat Analizi
+                </button>
                 <button class="nav-btn" data-view="analytics" style="color: #06b6d4;">
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     Genel Analiz
@@ -104,7 +108,7 @@
             </header>
 
             <div class="content-area">
-                <div class="search-bar-container" style="display: flex; gap: 10px; max-width: 600px; margin-bottom: 1.5rem;">
+                <div class="search-bar-container" style="display: flex; gap: 10px; width: 100%; max-width: 900px; margin-bottom: 1.5rem;">
                     <div class="search-bar" style="flex: 1; margin-bottom: 0;">
                         <input type="text" id="search-input" placeholder="Parça No veya Adı ara..." style="max-width: 100%;">
                     </div>
@@ -454,6 +458,127 @@
                         <!-- Results List -->
                         <div id="price-search-results" class="price-search-results-section" style="display: flex; flex-direction: column; gap: 1.5rem;">
                             <!-- Dynamic site cards with results -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fiyat Analizi View -->
+                <div id="price-analysis-view" class="view-section">
+                    <div class="stock-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div class="stock-title-area">
+                            <h2 class="stock-title" style="color: #ec4899;">Aylık Fiyat Değişim Analizi</h2>
+                            <p class="stock-subtitle">Fiyat artışları, indirimler, ortalama değişim oranları ve detaylı aylık fiyat şablonu</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600; color: var(--text-muted); font-size: 0.9rem;">Analiz Dönemi:</span>
+                            <select id="pa-period-select" class="stock-period-select" style="margin: 0; min-width: 170px; background: var(--panel-bg); border-color: var(--border-color); color: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; outline: none; font-weight: 600; font-family: inherit;">
+                                <option value="all">Tüm Dönemler (Kümülatif)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="stock-summary-cards" style="margin-bottom: 1.5rem;">
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(236,72,153,0.15); color: #ec4899;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Toplam Değişen Parça</span>
+                                <strong class="stock-stat-value" id="pa-stat-total-changed" style="color:#ec4899;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(239,68,68,0.15); color: #ef4444;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Fiyatı Artan (Zamlanan)</span>
+                                <strong class="stock-stat-value" id="pa-stat-increased-count" style="color:#ef4444;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(16,185,129,0.15); color: #10b981;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Fiyatı Düşen (İndirim)</span>
+                                <strong class="stock-stat-value" id="pa-stat-decreased-count" style="color:#10b981;">—</strong>
+                            </div>
+                        </div>
+                        <div class="stock-stat-card">
+                            <div class="stock-stat-icon" style="background: rgba(59,130,246,0.15); color: #3b82f6;">
+                                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="1.4em" width="1.4em"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>
+                            </div>
+                            <div class="stock-stat-info">
+                                <span class="stock-stat-label">Ortalama Değişim Oranı</span>
+                                <strong class="stock-stat-value" id="pa-stat-avg-change" style="color:#3b82f6;">—</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="chart-card" style="min-height: 380px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 14px;">
+                            <div class="chart-header" style="margin-bottom: 1.25rem;">
+                                <h3 style="font-size: 1.1rem; font-weight: 600; color: #fff;">Aylık Fiyat Değişim Sayıları</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Zamlanan ve indirim gören ürün adedi dağılımı</p>
+                            </div>
+                            <div style="position: relative; height: 260px; width: 100%;">
+                                <canvas id="chart-pa-monthly-counts"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card" style="min-height: 380px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 14px;">
+                            <div class="chart-header" style="margin-bottom: 1.25rem;">
+                                <h3 style="font-size: 1.1rem; font-weight: 600; color: #fff;">Değişim Oranı Dağılımı</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Parçaların fiyat değişim yüzdelerine göre dağılımı</p>
+                            </div>
+                            <div style="position: relative; height: 260px; width: 100%;">
+                                <canvas id="chart-pa-distribution"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card" style="margin-bottom: 2rem; min-height: 360px; background: var(--panel-bg); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: 14px;">
+                        <div class="chart-header" style="margin-bottom: 1.25rem;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600; color: #fff;">Dönemin En Yüksek Fiyat Hareketleri</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">En çok zamlanan ve en çok ucuzlayan ilk 5 parça</p>
+                        </div>
+                        <div style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="chart-pa-top-changes"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="background-color: var(--panel-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button id="pa-tab-all" class="toggle-btn active" style="margin:0;">Tüm Hareketler</button>
+                                <button id="pa-tab-up" class="toggle-btn" style="margin:0; color:#ef4444;">📈 Sadece Zamlananlar</button>
+                                <button id="pa-tab-down" class="toggle-btn" style="margin:0; color:#10b981;">📉 Sadece İndirimdekiler</button>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 320px;">
+                                <input type="text" id="pa-search-input" placeholder="Bu tabloda ara..." style="width: 100%; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: #fff; outline: none; font-size: 0.88rem;">
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parça No</th>
+                                    <th>Parça Adı</th>
+                                    <th>Önceki Fiyat</th>
+                                    <th>Yeni Fiyat</th>
+                                    <th>Fiyat Farkı</th>
+                                    <th>Değişim Oranı (%)</th>
+                                    <th style="text-align: center;">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pa-table-body">
+                                <!-- Dynamic rows injected via JS -->
+                            </tbody>
+                        </table>
+                        <div class="pagination" id="pa-pagination" style="padding: 1rem 1.5rem;">
+                            <button id="pa-prev-btn">Önceki</button>
+                            <span id="pa-page-info">Sayfa 1 / 1</span>
+                            <button id="pa-next-btn">Sonraki</button>
                         </div>
                     </div>
                 </div>
