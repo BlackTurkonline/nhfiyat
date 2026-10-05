@@ -279,33 +279,41 @@ body {
   border-radius: 12px;
   border: 1px solid var(--border-color);
   overflow-x: auto;
+  max-width: 100%;
+  position: relative;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 thead {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
 th, td {
-  padding: 1rem;
+  padding: 0.65rem 0.6rem;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
 }
 
 th {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  background-color: #111422;
 }
 
 td {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 tr:last-child td {
@@ -313,6 +321,10 @@ tr:last-child td {
 }
 
 tr:hover {
+  background-color: var(--panel-bg-hover);
+}
+
+tr:hover .pct-col-cell {
   background-color: var(--panel-bg-hover);
 }
 
@@ -330,14 +342,46 @@ tr:hover {
 
 .price-cell {
   font-size: 0.81rem !important;
+  white-space: nowrap;
 }
 
 .part-no-cell {
   font-size: 0.81rem !important;
+  white-space: nowrap;
 }
 
 .part-name-cell {
   font-size: 0.81rem !important;
+  max-width: 220px;
+  min-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sticky Artış (%) Column on the Far Right */
+.pct-col-head {
+  position: sticky;
+  right: 0;
+  z-index: 4 !important;
+  background-color: #111422 !important;
+  border-left: 1px solid var(--border-color);
+  box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+  text-align: right;
+  padding-right: 1rem !important;
+}
+
+.pct-col-cell {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background-color: var(--panel-bg);
+  border-left: 1px solid var(--border-color);
+  box-shadow: -4px 0 8px rgba(0,0,0,0.3);
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+  padding-right: 1rem !important;
 }
 
 /* Pagination */

@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${getIndicator('price-' + m)}
                 </th>`;
             });
-            headHTML += `<th class="sortable" data-sort="pctIncrease">Artış (%)${getIndicator('pctIncrease')}</th>`;
+            headHTML += `<th class="sortable pct-col-head" data-sort="pctIncrease">Artış (%)${getIndicator('pctIncrease')}</th>`;
             
             thead.innerHTML = headHTML;
             
@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let rowHTML = `
                 <td class="checkbox-col"><input type="checkbox" class="part-checkbox" data-part="${item.partNo}" ${isChecked ? 'checked' : ''}></td>
                 <td class="part-no-cell"><strong>${item.partNo}</strong></td>
-                <td class="part-name-cell">${item.partName}</td>
+                <td class="part-name-cell" title="${item.partName}">${item.partName}</td>
             `;
             const pricesValues = Object.values(item.prices);
             pricesValues.forEach((p, idx) => {
@@ -505,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 rowHTML += `<td class="price-cell ${cellClass}">${formatPrice(p)}</td>`;
             });
-            rowHTML += `<td class="${pctClass}">${item.pctIncrease > 0 ? '+' : ''}${item.pctIncrease.toFixed(2)}%</td>`;
+            rowHTML += `<td class="pct-col-cell ${pctClass}">${item.pctIncrease > 0 ? '+' : ''}${item.pctIncrease.toFixed(2)}%</td>`;
             tr.innerHTML = rowHTML;
             tbody.appendChild(tr);
         });
